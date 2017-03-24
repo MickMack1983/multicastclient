@@ -35,7 +35,7 @@ class ReqRepTestCase(unittest.TestCase):
             count_lock = Lock()
             calledCount = 0
 
-            def printFrame(self, message):
+            def printFrame(message):
                 nonlocal calledCount
                 count_lock.acquire()
                 try:
@@ -45,7 +45,7 @@ class ReqRepTestCase(unittest.TestCase):
                 self.assertEqual(message, "Hello", "message did not match")
                 return "Reply"
 
-            self.c.registerBusInterface("print", Callback(self.printFrame))
+            self.c.registerBusInterface("print", Callback(printFrame))
             t = Thread(target=self.c.run)
             t.daemon = True
             t.start()
@@ -53,16 +53,15 @@ class ReqRepTestCase(unittest.TestCase):
 
             reply = req.request("client0","print","Hello", 10)
             clientId, channel, mid, message = reply.split(',', 3)
-
-            pub.publish("Hello", "qwerty")
+            self.assertEqual(message, "Reply", "reply message did not match")
             self.assertEqual(calledCount, 1, 'callback not called the correct amount of times')
         finally:
-            if pub:
-                pub.close()
-                pub = None
-                if pub_t:
-                    pub_t.join(10)
-                    if pub_t.is_alive():
+            if req:
+                req.close()
+                req = None
+                if req_t:
+                    req_t.join(10)
+                    if req_t.is_alive():
                         print("failed to terminate pub thread")
 
 
