@@ -11,6 +11,7 @@ import re
 import struct
 from queue import Queue, Empty
 from pyloggedthread.loggedthread import LoggedThread as Thread
+from threading import Lock
 
 if os.name == 'nt':
     IPPROTO_IPV6 = 41 #Workaround for missing constants on Win32 systems.
@@ -81,6 +82,7 @@ class Client():
 
         self.__registeredBusInterfaces = dict()
         self.subPatterns = dict()
+        self.subPatternLock = Lock()
         self.requestQueues = dict()
         self.inbox = []
         if not os.name == 'nt':
@@ -123,10 +125,18 @@ class Client():
         self.__registeredBusInterfaces[signal] = callback
 
     def subscribe(self, pattern, callback):
-        self.subPatterns[pattern] = re.compile(pattern), callback
+        try:
+            self.subPatternLock.acquire()
+            self.subPatterns[pattern] = re.compile(pattern), callback
+        finally:
+            self.subPatternLock.release()
 
     def unsubscribe(self, pattern):
-        self.subPatterns.pop(pattern)
+        try:
+            self.subPatternLock.acquire()
+            self.subPatterns.pop(pattern)
+        finally:
+            self.subPatternLock.release()
 
     def run(self):
         while not self.closing:
@@ -142,9 +152,13 @@ class Client():
                     self._handleRequest(clientId, signal, mid, message)
             if channel.startswith('pub/'):
                 topic = channel.split('/', 1)[1]
-                for pattern, callback in self.subPatterns.values():
-                    if pattern.match(topic):
-                        callback.call(self, clientId, topic, mid, message)
+                try:
+                    self.subPatternLock.acquire()
+                    for pattern, callback in self.subPatterns.values():
+                        if pattern.match(topic):
+                            callback.call(self, clientId, topic, mid, message)
+                finally:
+                    self.subPatternLock.release()
             if channel.startswith('rep/' + self.clientId + '/'):
                 if mid in self.requestQueues:
                     self.requestQueues[mid].put_nowait(frame)
