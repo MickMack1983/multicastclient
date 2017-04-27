@@ -99,9 +99,7 @@ def __multiInInbox(client, header, returnval):
             returnval += framesegments[3]
             if len(frame) < ClientConstants.MAXSIZE:  # Is this the final segment?
                 done = True
-                pass
-        if done:
-            break
+                break
 
     for i in toberemoved.reverse():  # remove reversed to maintain order
         client.inbox.remove(i)
