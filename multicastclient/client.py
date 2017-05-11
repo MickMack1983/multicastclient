@@ -99,24 +99,36 @@ class Client():
         """
         return multicasting.send(message, 'pub/' + channel, self)
 
-    def request(self, receiverId, signal, message, timeout=None):
+    def request(self, receiverId, signal, message, timeout=None, retry=None):
         """
         Send request and block until reply received or timeout has expired
         :param receiverId: the id of a cliemt to receive the request
         :param signal: the interface name of the receiving client
         :param message: the message to the receiving client
         :param timeout: how long to block waiting for reply if None Client.DefaultTimeout is used
+        :param retry: true for one retry on timeout or integer for that many retries on timeout
         :return: the frame for the message.
         :raises: Empty: If no reply received before timeout
         """
         timeout = timeout if timeout else Client.DefaultTimeout
         mid = uuid.uuid4().hex
         self.requestQueues[mid] = Queue(1)
-        multicasting.send( message, 'req/' + receiverId  + '/'  +signal , self, mid)
+        doretry = int(retry) if retry else 0
         try:
-            return self.requestQueues[mid].get(True, timeout)
+            return self.__dorequest('req/' + receiverId + '/' + signal, message, mid, timeout, doretry)
         finally:
             self.requestQueues.pop(mid)
+
+    def __dorequest(self, channel, message, mid, timeout, retry):
+        while True:
+            multicasting.send(message, channel, self, mid)
+            try:
+                return self.requestQueues[mid].get(True, timeout)
+            except Empty:
+                if retry > 0:
+                    retry -= 1
+                else:
+                    break
 
     def reply(self, reply, senderId, signal, mid):
         multicasting.send(reply, 'rep/' + senderId + '/' + signal, self, mid)
@@ -203,7 +215,6 @@ class ThreadedClient(Client):
                     Client.subscribe(self, pattern, DetailedCallback(callback))
                 else:
                     Client.subscribe(self, pattern, Callback(callback))
-
 
     def registerBusInterface(self, signal, callback, threaded=True, detailed=True):
         if isinstance(callback, Callback):

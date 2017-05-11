@@ -7,9 +7,7 @@ setup(
     description='Bus utils for pyDip',
     author='IoT Superheroes',
     author_email='mikael.m.magnusson@gmail.com',
-    packages=[ 'multicastclient'   ],
-    requires=[ 'pyloggedthread'
-    ],
-      install_requires=[
-            'ConcurrentLogHandler'
-      ])
+    packages=['multicastclient'],
+    requires=['pyloggedthread'],
+    install_requires=['ConcurrentLogHandler']
+)
