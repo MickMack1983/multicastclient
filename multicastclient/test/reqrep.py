@@ -1,5 +1,5 @@
 import unittest
-from threading import Thread, Lock, ThreadError
+from threading import Thread, Lock
 from multicastclient.client import ThreadedClient
 from multicastclient.client import Callback
 
@@ -30,19 +30,21 @@ class ReqRepTestCase(unittest.TestCase):
         self.t = None
 
     def test_request(self):
+        req = None
+        req_t = None
         try:
-            req , req_t = self.__getClient('request')
+            req, req_t = self.__getClient('request')
             count_lock = Lock()
             calledCount = 0
 
-            def printFrame(message):
+            def printFrame(msg):
                 nonlocal calledCount
                 count_lock.acquire()
                 try:
                     calledCount += 1
                 finally:
                     count_lock.release()
-                self.assertEqual(message, "Hello", "message did not match")
+                self.assertEqual(msg, "Hello", "message did not match")
                 return "Reply"
 
             self.c.registerBusInterface("print", Callback(printFrame))
@@ -50,15 +52,13 @@ class ReqRepTestCase(unittest.TestCase):
             t.daemon = True
             t.start()
 
-
-            reply = req.request("client0","print","Hello", 10)
+            reply = req.request("client0", "print", "Hello", 10)
             clientId, channel, mid, message = reply.split(',', 3)
             self.assertEqual(message, "Reply", "reply message did not match")
             self.assertEqual(calledCount, 1, 'callback not called the correct amount of times')
         finally:
             if req:
                 req.close()
-                req = None
                 if req_t:
                     req_t.join(10)
                     if req_t.is_alive():

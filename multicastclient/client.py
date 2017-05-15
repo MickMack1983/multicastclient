@@ -1,7 +1,6 @@
 """
     Client for communication over UDP Multicast
 """
-import logging
 import socket
 import uuid
 import os
@@ -14,14 +13,15 @@ from pyloggedthread.loggedthread import LoggedThread as Thread
 from threading import Lock
 
 if os.name == 'nt':
-    IPPROTO_IPV6 = 41 #Workaround for missing constants on Win32 systems.
+    IPPROTO_IPV6 = 41  # Workaround for missing constants on Win32 systems.
 else:
+    # noinspection PyUnresolvedReferences
     from socket import IPPROTO_IPV6
 
 __status__ = 'Development'
 
 
-class Callback():
+class Callback:
 
     def __init__(self, target):
         self.target = target
@@ -31,7 +31,8 @@ class Callback():
         if reply:
             client.reply(reply, senderId, signal, mid)
 
-class DetailedCallback():
+
+class DetailedCallback:
 
     def __init__(self, target):
         self.target = target
@@ -48,7 +49,8 @@ class ThreadedCallback(Callback):
         Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
-        Thread(target=self.target,args=(message), daemon=True).start()
+        Thread(target=self.target, args=message, daemon=True).start()
+
 
 class ThreadedDetailedCallback(Callback):
 
@@ -56,16 +58,15 @@ class ThreadedDetailedCallback(Callback):
         Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
-        Thread(target=self.target,args=(client, senderId, signal, mid, message), daemon=True).start()
+        Thread(target=self.target, args=(client, senderId, signal, mid, message), daemon=True).start()
 
 
-
-class Client():
-    DefaultTimeout= 30
+class Client:
+    DefaultTimeout = 30
 
     def __init__(self, clientId, port, addr):
-        self.PORT = port #26000
-        self.ADDR = addr #'ff01::1' #IPV6 Multicast Address
+        self.PORT = port  # 26000
+        self.ADDR = addr  # 'ff01::1' #IPV6 Multicast Address
         self.clientId = clientId
         self.closing = False
 
@@ -90,7 +91,7 @@ class Client():
             self.sigKill = os.fdopen(w, 'w')
             self.isKilled = os.fdopen(r, 'r')
 
-    def publish(self, message, channel ):
+    def publish(self, message, channel):
         """
         Send a publication on the given channel
         :param message: the message to be published
@@ -193,13 +194,13 @@ class Client():
             if self.isKilled:
                 self.isKilled.close()
 
+
 class ThreadedClient(Client):
 
-    def __init__(self, clientId, port=26000, address='ff01::1' ):
+    def __init__(self, clientId, port=26000, address='ff01::1'):
         Client.__init__(self, clientId, port, address)
         t = Thread(target=self.run, daemon=True)
         t.start()
-
 
     def subscribe(self, pattern, callback, threaded=True, detailed=True):
         if isinstance(callback, Callback):

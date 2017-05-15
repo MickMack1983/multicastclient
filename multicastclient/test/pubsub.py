@@ -1,5 +1,5 @@
 import unittest
-from threading import Thread, Lock, ThreadError
+from threading import Thread, Lock
 from multicastclient.client import ThreadedClient
 
 
@@ -29,11 +29,14 @@ class PubSubTestCase(unittest.TestCase):
         self.t = None
 
     def test_subscribe(self):
+        pub = None
+        pub_t = None
         try:
-            pub , pub_t = self.__getClient('pub')
+            pub, pub_t = self.__getClient('pub')
             count_lock = Lock()
             calledCount = 0
 
+            # noinspection PyUnusedLocal
             def subCallback(client, senderId, signal, mid, message):
                 nonlocal calledCount
                 count_lock.acquire()
@@ -43,13 +46,12 @@ class PubSubTestCase(unittest.TestCase):
                     count_lock.release()
                 self.assertEqual(message, "Hello", "message did not match")
 
-            self.c.subscribe("qwerty",subCallback)
+            self.c.subscribe("qwerty", subCallback)
             pub.publish("Hello", "qwerty")
             self.assertEqual(calledCount, 1, 'callback not called the correct amount of times')
         finally:
             if pub:
                 pub.close()
-                pub = None
                 if pub_t:
                     pub_t.join(10)
                     if pub_t.is_alive():

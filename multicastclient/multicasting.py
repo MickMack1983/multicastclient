@@ -3,9 +3,12 @@ import time
 import select
 import os
 import logging
+
+
 class ClientConstants(object):
     MAXSIZE = 16384
     SF_TIMEOUT = 10
+
 
 def send(msg, channel, client, mid=None):
     mid = mid or uuid.uuid4().hex
@@ -13,7 +16,7 @@ def send(msg, channel, client, mid=None):
     jsonStringMsg = ""
     if not isinstance(msg, bytes):
         try:
-            jsonStringMsg  = bytes(msg, 'UTF-8')
+            jsonStringMsg = bytes(msg, 'UTF-8')
         except Exception as e:
             logging.getLogger('multicast-send').error("msg is not a string" + str(type(msg)))
             raise e
@@ -29,7 +32,7 @@ def send(msg, channel, client, mid=None):
     return mid
 
 
-def recv(client): #recv packets
+def recv(client):  # recv packets
     """
     Receive a full frame of data:
             "<clientId>,<channel>,<mid>,<msg-body>"
@@ -46,11 +49,11 @@ def recv(client): #recv packets
         frame = client.inbox.pop(0)
     else:
         if os.name == 'nt':
-            [rlist,_,_] = select.select([client.socket],[],[],ClientConstants.SF_TIMEOUT)
+            [rlist, _, _] = select.select([client.socket], [], [], ClientConstants.SF_TIMEOUT)
             if client.closing:
                 return
         else:
-            [rlist,_,_] = select.select([client.socket, client.isKilled],[],[],ClientConstants.SF_TIMEOUT)
+            [rlist, _, _] = select.select([client.socket, client.isKilled], [], [], ClientConstants.SF_TIMEOUT)
         if client.socket in rlist:
             frame, _ = client.socket.recvfrom(ClientConstants.MAXSIZE)
         else:
@@ -59,6 +62,7 @@ def recv(client): #recv packets
     if len(frame) == ClientConstants.MAXSIZE:  # Multiframe message
         return __handleMultiframe(client, frame)
     return frame.decode('UTF-8')
+
 
 def __handleMultiframe(client, frame):
     framesegments = frame.split(',', 3)
@@ -69,12 +73,14 @@ def __handleMultiframe(client, frame):
     else:
         done = False
 
-    while (not done and time.time() < (timestamp + ClientConstants.SF_TIMEOUT)):
-        nextFrame = recv(client)  # nextFrame: is either
-                                  #  * a new meesage,
-                                  #  * the remaining part(s) of current msg (all parts due to recursion)
-                                  #  * None Timeout
-
+    while not done and time.time() < (timestamp + ClientConstants.SF_TIMEOUT):
+        """
+            nextFrame: is either
+            * a new meesage,
+            * the remaining part(s) of current msg (all parts due to recursion)
+            * None Timeout
+        """
+        nextFrame = recv(client)
         if not nextFrame:
             return  # Timeout
         nextSegments = nextFrame.split(',', 3)
@@ -87,6 +93,7 @@ def __handleMultiframe(client, frame):
         return  # Timeout
     else:
         return returnval.decode('UTF-8')
+
 
 def __multiInInbox(client, header, returnval):
     toberemoved = []
@@ -101,6 +108,7 @@ def __multiInInbox(client, header, returnval):
                 done = True
                 break
 
-    for i in toberemoved.reverse():  # remove reversed to maintain order
+    toberemoved.reverse()
+    for i in toberemoved:  # remove reversed to maintain order
         client.inbox.remove(i)
     return returnval, done
