@@ -9,7 +9,8 @@ from multicastclient import multicasting
 import re
 import struct
 from queue import Queue, Empty
-from pyloggedthread.loggedthread import LoggedThread as Thread
+#from pyloggedthread.loggedthread import LoggedThread as Thread
+from threading import Thread
 from threading import Lock
 
 if os.name == 'nt':
