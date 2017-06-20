@@ -25,7 +25,7 @@ def send(msg, channel, client, mid=None):
     if len(header + jsonStringMsg) > ClientConstants.MAXSIZE:
         maxChunk = ClientConstants.MAXSIZE - len(header)
         for i in range(int(len(jsonStringMsg)/maxChunk)+1):
-            client.socket.sendto(header + jsonStringMsg[maxChunk*i:maxChunk*(i+i)], (client.ADDR, client.PORT))
+            client.socket.sendto(header + jsonStringMsg[maxChunk*i:maxChunk*(i+1)], (client.ADDR, client.PORT))
     else:
         client.socket.sendto(header + jsonStringMsg, (client.ADDR, client.PORT))
     time.sleep(0.01)         # Yield time :)
@@ -55,13 +55,14 @@ def recv(client):  # recv packets
         else:
             [rlist, _, _] = select.select([client.socket, client.isKilled], [], [], ClientConstants.SF_TIMEOUT)
         if client.socket in rlist:
-            frame, _ = client.socket.recvfrom(ClientConstants.MAXSIZE)
+            bframe, _ = client.socket.recvfrom(ClientConstants.MAXSIZE)
+            frame = bframe.decode('UTF-8')
         else:
             return  # Timeout
 
     if len(frame) == ClientConstants.MAXSIZE:  # Multiframe message
         return __handleMultiframe(client, frame)
-    return frame.decode('UTF-8')
+    return frame
 
 
 def __handleMultiframe(client, frame):
@@ -92,7 +93,7 @@ def __handleMultiframe(client, frame):
     if not done:
         return  # Timeout
     else:
-        return returnval.decode('UTF-8')
+        return returnval
 
 
 def __multiInInbox(client, header, returnval):
