@@ -11,7 +11,12 @@ class Hepp:
         t.start()
 
     def request(self):
-        reply = self.c.request('c1', 'print', "This is a message", 10)
+        msg = ""
+        for i in range(73):
+           msg += chr(ord('A') + i % 25)
+        print("trying to send message:" + str(msg))
+        reply = self.c.request('c1', 'print', msg, 10)
+
         print(reply)
 
 

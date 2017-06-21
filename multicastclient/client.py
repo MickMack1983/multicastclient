@@ -9,8 +9,8 @@ from multicastclient import multicasting
 import re
 import struct
 from queue import Queue, Empty
-from pyloggedthread.loggedthread import ErrorLoggedThread as Thread
-#from threading import Thread
+#from pyloggedthread.loggedthread import ErrorLoggedThread as Thread
+from threading import Thread
 from threading import Lock
 
 if os.name == 'nt':
@@ -86,6 +86,7 @@ class Client:
         self.subPatterns = dict()
         self.subPatternLock = Lock()
         self.requestQueues = dict()
+        self.inboxLock = Lock()
         self.inbox = []
         if not os.name == 'nt':
             r, w = os.pipe()
@@ -151,6 +152,13 @@ class Client:
             self.subPatterns.pop(pattern)
         finally:
             self.subPatternLock.release()
+
+    def lock(self):
+        self.inboxLock.acquire()
+
+    def unlock(self):
+        self.inboxLock.release()
+
 
     def run(self):
         while not self.closing:

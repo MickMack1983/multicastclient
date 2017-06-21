@@ -6,7 +6,7 @@ import logging
 
 
 class ClientConstants(object):
-    MAXSIZE = 16384
+    MAXSIZE = 75
     SF_TIMEOUT = 10
 
 
@@ -28,11 +28,11 @@ def send(msg, channel, client, mid=None):
             client.socket.sendto(header + jsonStringMsg[maxChunk*i:maxChunk*(i+1)], (client.ADDR, client.PORT))
     else:
         client.socket.sendto(header + jsonStringMsg, (client.ADDR, client.PORT))
-    time.sleep(0.01)         # Yield time :)
+    time.sleep(0.001)         # Yield time :)
     return mid
 
 
-def recv(client):  # recv packets
+def recv(client, requiredHeader=None):  # recv packets
     """
     Receive a full frame of data:
             "<clientId>,<channel>,<mid>,<msg-body>"
@@ -41,13 +41,22 @@ def recv(client):  # recv packets
             isKilled: a file descriptor which is readable only when socket is killed
             inbox: a list to store messages when assembling message parts
     """
+    frame = None
     if client.closing:
         return
     if not client.inbox:
         client.inbox = list()
     if len(client.inbox) > 0:
-        frame = client.inbox.pop(0)
-    else:
+        client.lock()
+        if requiredHeader:
+            for i in range(len(client.inbox)):
+                 if requiredHeader == client.inbox[i].split(',',3)[0:3]:
+                     frame = client.inbox.pop(i)
+                     break
+        else:
+            frame = client.inbox.pop(0)
+        client.unlock()
+    if not frame:
         if os.name == 'nt':
             [rlist, _, _] = select.select([client.socket], [], [], ClientConstants.SF_TIMEOUT)
             if client.closing:
@@ -57,11 +66,13 @@ def recv(client):  # recv packets
         if client.socket in rlist:
             bframe, _ = client.socket.recvfrom(ClientConstants.MAXSIZE)
             frame = bframe.decode('UTF-8')
+            if frame.split(',', 1)[0] == client.clientId:
+                return
         else:
             return  # Timeout
-
+    
     if len(frame) == ClientConstants.MAXSIZE:  # Multiframe message
-        return __handleMultiframe(client, frame)
+        return  __handleMultiframe(client, frame)
     return frame
 
 
@@ -69,47 +80,29 @@ def __handleMultiframe(client, frame):
     framesegments = frame.split(',', 3)
     returnval = frame
     timestamp = time.time()
-    if len(client.inbox) > 0:
-        returnval, done = __multiInInbox(client, framesegments[0:3], returnval)
-    else:
-        done = False
+    done = False
 
     while not done and time.time() < (timestamp + ClientConstants.SF_TIMEOUT):
         """
             nextFrame: is either
             * a new meesage,
             * the remaining part(s) of current msg (all parts due to recursion)
-            * None Timeout
+            * None Timeout or Message from self
         """
-        nextFrame = recv(client)
+        nextFrame = recv(client, framesegments[0:3])
         if not nextFrame:
-            return  # Timeout
+            continue
         nextSegments = nextFrame.split(',', 3)
         if framesegments[0:3] == nextSegments[0:3]:  # Compare headers
             returnval += nextSegments[3]  # append nextFrame messgage body
             done = True
         else:
+            client.lock()
             client.inbox.append(nextFrame)   # Not my message store for later
+            client.unlock()
     if not done:
         return  # Timeout
     else:
         return returnval
 
 
-def __multiInInbox(client, header, returnval):
-    toberemoved = []
-    done = False
-    for i in range(len(client.inbox)):
-        frame = client.inbox[i]
-        framesegments = frame.split(',', 3)
-        if header == framesegments[0:3]:
-            toberemoved.append(i)
-            returnval += framesegments[3]
-            if len(frame) < ClientConstants.MAXSIZE:  # Is this the final segment?
-                done = True
-                break
-
-    toberemoved.reverse()
-    for i in toberemoved:  # remove reversed to maintain order
-        client.inbox.remove(i)
-    return returnval, done
