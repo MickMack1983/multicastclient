@@ -6,7 +6,7 @@ import logging
 
 
 class ClientConstants(object):
-    MAXSIZE = 75
+    MAXSIZE = 65536
     SF_TIMEOUT = 10
 
 
