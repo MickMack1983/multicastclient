@@ -33,10 +33,10 @@ class Callback:
             client.reply(reply, senderId, signal, mid)
 
 
-class DetailedCallback:
+class DetailedCallback(Callback):
 
     def __init__(self, target):
-        self.target = target
+        Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
         reply = self.target(senderId, signal, mid, message)
