@@ -62,7 +62,8 @@ class TiipClient:
 
     def request(self, message, timeout=None, retry=None):
         if message.src:
-            message.src.append([self.c.clientId])
+            if not message.src[-1] == self.c.clientId:
+                message.src.append(self.c.clientId)
         else:
             message.src = [self.c.clientId]
         responseString = self.c.request("/".join(message.targ), message.sig, str(message), timeout, retry)
