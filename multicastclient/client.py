@@ -161,29 +161,32 @@ class Client:
 
 
     def run(self):
-        while not self.closing:
-            frame = multicasting.recv(self)
-            if not frame:
-                continue
-            clientId, channel, mid, message = frame.split(',', 3)
-            if clientId == self.clientId:
-                continue
-            if channel.startswith('req/' + self.clientId + '/'):
-                signal = channel.split('/', 2)[2]
-                if signal in self.__registeredBusInterfaces:
-                    self._handleRequest(clientId, signal, mid, message)
-            if channel.startswith('pub/'):
-                topic = channel.split('/', 1)[1]
-                try:
-                    self.subPatternLock.acquire()
-                    for pattern, callback in self.subPatterns.values():
-                        if pattern.match(topic):
-                            callback.call(self, clientId, topic, mid, message)
-                finally:
-                    self.subPatternLock.release()
-            if channel.startswith('rep/' + self.clientId + '/'):
-                if mid in self.requestQueues:
-                    self.requestQueues[mid].put_nowait(frame)
+        try:
+            while not self.closing:
+                frame = multicasting.recv(self)
+                if not frame:
+                    continue
+                clientId, channel, mid, message = frame.split(',', 3)
+                if clientId == self.clientId:
+                    continue
+                if channel.startswith('req/' + self.clientId + '/'):
+                    signal = channel.split('/', 2)[2]
+                    if signal in self.__registeredBusInterfaces:
+                        self._handleRequest(clientId, signal, mid, message)
+                if channel.startswith('pub/'):
+                    topic = channel.split('/', 1)[1]
+                    try:
+                        self.subPatternLock.acquire()
+                        for pattern, callback in self.subPatterns.values():
+                            if pattern.match(topic):
+                                callback.call(self, clientId, topic, mid, message)
+                    finally:
+                        self.subPatternLock.release()
+                if channel.startswith('rep/' + self.clientId + '/'):
+                    if mid in self.requestQueues:
+                        self.requestQueues[mid].put_nowait(frame)
+        finally:
+            self.closing =True
 
     def _handleRequest(self, senderId, signal, mid, message):
         self.__registeredBusInterfaces[signal].call(self, senderId, signal, mid, message)
