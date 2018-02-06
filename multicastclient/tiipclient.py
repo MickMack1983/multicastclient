@@ -3,7 +3,7 @@
 """
 from multicastclient.client import Client, Callback
 from pytiip.tiip import TIIPMessage
-from pyloggedthread.loggedthread import LoggedThread as Thread
+from pyloggedthread.loggedthread import ErrorLoggedThread as Thread
 
 __status__ = 'Development'
 
