@@ -89,4 +89,10 @@ class TiipClient:
             else:
                 self.c.registerBusInterface(signal, TiipCallback(callback))
 
+    def getClosed(self):
+        return self.c.closing
+
+    closing = property(getClosed)
+
+
 
