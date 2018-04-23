@@ -23,46 +23,113 @@ __status__ = 'Development'
 
 
 class Callback:
+    """
+        A callback object, for use with the multicast client
+    """
 
     def __init__(self, target):
+        """
+        Construct a callback object, for use with the multicast client, that uses the target function
+        :param target: The function to execute when running the Callback. The function should take a message as argument and return a message as return value
+        """
         self.target = target
 
     def call(self, client, senderId, signal, mid, message):
+        """
+        The call function that executes the target function.
+        :param client: The multicast client that controls this Callback object.
+        :param senderId: The id of the multicast client .
+        :param signal: The signal of the reply message.
+        :param mid: The message id of the request to respond to.
+        :param message: The actual message to send as an argument to the target function
+        :return: None (but the clients reply function is invoked with the return value of the target function)
+        """
         reply = self.target(message)
         if reply:
             client.reply(reply, senderId, signal, mid)
 
 
 class DetailedCallback(Callback):
+    """
+        A callback object, for use with the multicast client, that uses longer more detailed callbacks
+    """
 
     def __init__(self, target):
+        """
+        Construct a callback object, for use with the multicast client, that uses the target function
+        :param target: The function to execute when running the Callback. The function should take a client, senderId, signal, mid and message as arguments and return a message as return value
+        """
         Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
+        """
+        The call function that executes the target function.
+        :param client: The multicast client that controls this Callback object.
+        :param senderId: The id of the multicast client .
+        :param signal: The signal of the reply message.
+        :param mid: The message id of the request to respond to.
+        :param message: The actual message to send as an argument to the target function
+        :return: None (but the clients reply function is invoked with the return value of the target function)
+        """
         reply = self.target(senderId, signal, mid, message)
         if reply:
             client.reply(reply, senderId, signal, mid)
 
 
 class ThreadedCallback(Callback):
+    """
+        A callback object, for use with the multicast client, that spawns a thread to run the target function
+    """
 
     def __init__(self, target):
+        """
+        Construct a callback object, for use with the multicast client, that uses the target function
+        :param target: The function to execute when running the Callback. The function should take a message as argument and return a message as return value
+        """
         Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
+        """
+        The call function that executes the target function.
+        :param client: The multicast client that controls this Callback object.
+        :param senderId: The id of the multicast client .
+        :param signal: The signal of the reply message.
+        :param mid: The message id of the request to respond to.
+        :param message: The actual message to send as an argument to the target function
+        :return: None (the reply needs to be handled in the target function)
+        """
         Thread(target=self.target, args=message, daemon=True).start()
 
 
 class ThreadedDetailedCallback(Callback):
+    """
+        A callback object, for use with the multicast client, that spawns a thread to run the target function and use the longer argument format
+    """
 
     def __init__(self, target):
+        """
+        Construct a callback object, for use with the multicast client, that uses the target function
+        :param target: The function to execute when running the Callback. The function should take a client, senderId, signal, mid and message as arguments and return a message as return value
+        """
         Callback.__init__(self, target)
 
     def call(self, client, senderId, signal, mid, message):
+        """
+        The call function that executes the target function.
+        :param client: The multicast client that controls this Callback object.
+        :param senderId: The id of the multicast client .
+        :param signal: The signal of the reply message.
+        :param mid: The message id of the request to respond to.
+        :param message: The actual message to send as an argument to the target function
+        :return: None (the reply needs to be handled in the target function)
+        """
         Thread(target=self.target, args=(client, senderId, signal, mid, message), daemon=True).start()
 
 
 class Client:
+    """
+    A client for sending stringbased messages over UDP multicast in a request, reply, publish, subscribe manner.
+    """
     DefaultTimeout = 30
 
     def __init__(self, clientId, port, addr):
@@ -134,12 +201,36 @@ class Client:
                     break
 
     def reply(self, reply, senderId, signal, mid):
+        """
+        Send a reply to a request
+        :param reply: the message to send as a reply
+        :param senderId: the id of the client to receive the reply
+        :param signal: the signal of the request which is replying
+        :param mid: the message id to reply to
+        """
         multicasting.send(reply, 'rep/' + senderId + '/' + signal, self, mid)
 
     def registerBusInterface(self, signal, callback):
+        """
+        register an API to handle with a callback
+        :param signal: the API name to handle
+        :param callback: the function to run when the API is called
+        """
         self.__registeredBusInterfaces[signal] = callback
 
+    def unregisterBusInterface(self, signal):
+        """
+        Unregister an API
+        :param signal: the API name to remove all callbacks for
+        """
+        self.__registeredBusInterfaces.pop(signal)
+
     def subscribe(self, pattern, callback):
+        """
+        subscribe to messages with the following pattern
+        :param pattern: The pattern to match
+        :param callback: the Callback object to run when a publication is received
+        """
         try:
             self.subPatternLock.acquire()
             self.subPatterns[pattern] = re.compile(pattern), callback
@@ -147,6 +238,10 @@ class Client:
             self.subPatternLock.release()
 
     def unsubscribe(self, pattern):
+        """
+        remove subscription to pattern
+        :param pattern: The pattern to match
+        """
         try:
             self.subPatternLock.acquire()
             self.subPatterns.pop(pattern)
@@ -212,6 +307,13 @@ class ThreadedClient(Client):
         t.start()
 
     def subscribe(self, pattern, callback, threaded=True, detailed=True):
+        """
+        subscribe to messages with the following pattern
+        :param pattern: The pattern to match
+        :param callback: the Callback object or a function to run when a publication is received
+        :param threaded: should the callback be handled in a new thread?  (only if callback is a function)
+        :param detailed: should the callback function use the long arg form? (only if callback is a function)
+        """
         if isinstance(callback, Callback):
             Client.subscribe(self, pattern, callback)
         else:
@@ -227,6 +329,13 @@ class ThreadedClient(Client):
                     Client.subscribe(self, pattern, Callback(callback))
 
     def registerBusInterface(self, signal, callback, threaded=True, detailed=True):
+        """
+        register an API to handle with a callback
+        :param signal: the API name to handle
+        :param callback: the Callback object or a function to run when a request is received
+        :param threaded: should the callback be handled in a new thread?  (only if callback is a function)
+        :param detailed: should the callback function use the long arg form? (only if callback is a function)
+        """
         if isinstance(callback, Callback):
             Client.registerBusInterface(self, signal, callback)
         else:

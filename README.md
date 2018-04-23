@@ -1,5 +1,7 @@
 # multicastclient
-UDP Multicast client system 
+UDP Multicast client system.
+
+This client was developed to act as a brokerless messaging bus for same system and potential local networking solutions mainly for IoT agent applications
 
 
 
@@ -11,4 +13,9 @@ python3 setup.py install
 ```
 
 ## License ##
-See the [License](/LICENSE) for details. 
+See the [License](/LICENSE) for details.
+
+
+## Usage examples ##
+See the [examples](/examples/example.py) for details.
+
