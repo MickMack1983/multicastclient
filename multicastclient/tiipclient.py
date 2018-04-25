@@ -125,8 +125,8 @@ class TiipClient:
             else:
                 self.c.registerBusInterface(signal, TiipCallback(callback))
 
-    def unregisterBusInterface(self, signal, callback, threaded=True):
-        self.c.unregisterBusInterface(signal, TiipCallback(callback))
+    def unregisterBusInterface(self, signal):
+        self.c.unregisterBusInterface(signal)
 
     def getClosed(self):
         return self.c.closing
