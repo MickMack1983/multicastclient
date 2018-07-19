@@ -6,10 +6,8 @@ This client was developed to act as a brokerless messaging bus for same system a
 
 
 ## Installation ##
-Run (as admin) from within the cloned repository folder.
 ```
-#!bash
-python3 setup.py install
+python3 -m pip install multicastclient
 ```
 
 ## License ##
