@@ -26,7 +26,7 @@ SOFTWARE.
 from setuptools import setup
 setup(
     name='multicastclient',
-    version='1.0a',
+    version='1.0',
     description='UDP multicast brokerless messaging system',
     keywords='broker brokerless messaging udp multicast publish subscribe request reply',
     author='Mikael Magnusson',
