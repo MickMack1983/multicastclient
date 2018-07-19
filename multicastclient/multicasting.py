@@ -13,7 +13,7 @@ class ClientConstants(object):
 def send(msg, channel, client, mid=None):
     mid = mid or uuid.uuid4().hex
     header = bytes(client.clientId + "," + channel + "," + mid + ",", 'UTF-8')
-    jsonStringMsg = ""
+    jsonStringMsg = msg
     if not isinstance(msg, bytes):
         try:
             jsonStringMsg = bytes(msg, 'UTF-8')
@@ -28,7 +28,6 @@ def send(msg, channel, client, mid=None):
             client.socket.sendto(header + jsonStringMsg[maxChunk*i:maxChunk*(i+1)], (client.ADDR, client.PORT))
     else:
         client.socket.sendto(header + jsonStringMsg, (client.ADDR, client.PORT))
-    time.sleep(0.001)         # Yield time :)
     return mid
 
 

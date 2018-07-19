@@ -13,7 +13,7 @@ python3 setup.py install
 ```
 
 ## License ##
-See the [License](/LICENSE) for details.
+See the [License](/LICENSE.txt) for details.
 
 
 ## Usage examples ##
