@@ -1,5 +1,5 @@
 from threading import Thread
-from multicastclient.client import Client, DetailedCallback
+from multicasttiipbusclientclient.client import Client, DetailedCallback
 import time
 
 

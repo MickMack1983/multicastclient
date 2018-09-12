@@ -5,7 +5,7 @@ import socket
 import uuid
 import os
 import time
-from multicastclient import multicasting
+from tiipbusclient import multicasting
 import re
 import struct
 from queue import Queue, Empty

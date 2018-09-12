@@ -1,5 +1,5 @@
 from threading import Thread
-from multicastclient.client import Client
+from tiipbusclient.client import Client
 
 
 class Hepp:

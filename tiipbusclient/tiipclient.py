@@ -1,7 +1,7 @@
 """
     Client for communication over UDP Multicast with Tiip protocol
 """
-from multicastclient.client import Client, Callback
+from tiipbusclient.client import Client, Callback
 from pytiip.tiip import TIIPMessage
 from threading import Thread
 

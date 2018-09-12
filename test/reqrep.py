@@ -1,7 +1,7 @@
 import unittest
 from threading import Thread, Lock
-from multicastclient.client import ThreadedClient
-from multicastclient.client import Callback
+from tiipbusclient.client import ThreadedClient
+from tiipbusclient.client import Callback
 
 
 class ReqRepTestCase(unittest.TestCase):

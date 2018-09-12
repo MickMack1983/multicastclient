@@ -26,14 +26,14 @@ SOFTWARE.
 from setuptools import setup
 setup(
     name='multicastclient',
-    version='1.0',
+    version='2.0',
     description='UDP multicast brokerless messaging system',
     keywords='broker brokerless messaging udp multicast publish subscribe request reply',
     author='Mikael Magnusson',
     author_email='mikael.m.magnusson@gmail.com',
     license='MIT License',
     url="https://github.com/MickMack1983/multicastclient.git",
-    packages=['multicastclient'],
+    packages=['tiipbusclient'],
     requires=[],
     install_requires=[],
     classifiers = [

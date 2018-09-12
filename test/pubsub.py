@@ -1,6 +1,6 @@
 import unittest
 from threading import Thread, Lock
-from multicastclient.client import ThreadedClient
+from tiipbusclient.client import ThreadedClient
 
 
 class PubSubTestCase(unittest.TestCase):

@@ -1,4 +1,4 @@
-from multicastclient.tiipclient import TiipClient
+from tiipbusclient.tiipclient import TiipClient
 from pytiip.tiip import TIIPMessage
 
 class Application:
